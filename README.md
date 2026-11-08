@@ -1,6 +1,6 @@
 # Dangun Feveron
 
-A gameplay patch for Dangun Feveron (Japan, 98/09/17 VER.)<br>
+A gameplay patch for `Dangun Feveron (Japan, 98/09/17 VER.)`<br>
 This repository holds only source, tools and notes. **No ROM data is included**; you patch your own legally owned dump.
 ## To Do:
 
