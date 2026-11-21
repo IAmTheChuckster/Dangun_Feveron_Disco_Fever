@@ -1,0 +1,28 @@
+# No game data in this repository: ROMs, ROM dumps, RAM dumps and MAME output stay local.
+
+# ROM sets and archives (feversos.zip, dfeveron.zip, the patched dfeveronfever.zip, ...)
+*.zip
+*.7z
+*.rar
+roms/
+mameset/
+
+# Raw ROM / program / memory dumps (cv01-*.bin, cv01-*.sos, prog.bin, ram_*.bin, vdump.bin, ...)
+*.bin
+*.sos
+*.rom
+*.dis
+
+# MAME state, NVRAM, config, snapshots and logs
+*.sta
+*.nv
+nvram/
+cfg/
+snap/
+sta/
+*.png
+error.log
+
+# Local editor / tool settings
+.claude/settings.local.json
+.claude/launch.json

@@ -1,0 +1,2 @@
+wpset 400230,40,w,1,{logerror "pc=%06x a=%06x d=%08x a0=%08x a1=%08x a2=%08x a3=%08x\n",pc,wpaddr,wpdata,a0,a1,a2,a3;go}
+go
