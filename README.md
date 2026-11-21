@@ -22,7 +22,7 @@ I did all the testing and planning.
 ## Patching the game
 
 ### Web Patcher
-Open the **[Web Patcher](https://iamthechuckster.github.io/game/)** (`index.html`) and drop in your `feversos.zip` (or `dfeveron.zip`). It checks the file names and CRCs, builds the patched files automatically, and lets you download the complete `dfeveronfever.zip` romset and the MiSTer `Dangun Feveron More Fever.mra`. Everything runs in your browser; nothing is uploaded.
+Open the **[Web Patcher](https://iamthechuckster.github.io/Dangun_Feveron_Disco_Fever/)** (`index.html`) and drop in your `feversos.zip` (or `dfeveron.zip`). It checks the file names and CRCs, builds the patched files automatically, and lets you download the complete `dfeveronfever.zip` romset and the MiSTer `Dangun Feveron More Fever.mra`. Everything runs in your browser; nothing is uploaded.
 
 ### With Python
 Needs Python 3 (no extra packages):
