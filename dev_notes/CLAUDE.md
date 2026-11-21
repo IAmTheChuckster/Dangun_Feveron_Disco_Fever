@@ -202,7 +202,7 @@ SHA-1s are in `FILES` in `patch.py`.
 - `patch.py`: Python patcher (stdlib only). `python patch.py feversos.zip [-o out.zip]` writes a standalone
   `dfeveronfever.zip`: only the 8 dfeveron files, flat, with no feversos files and no `dfeveron/` folder. **Every file
   the patch changes gets `fever` appended** (`cv01-u33fever.bin`, `cv01-u34fever.bin`; see `OUT_NAMES`). It also
-  rewrites the program-ROM names and CRCs in `mister/Dangun Feveron More Fever.mra`. Contents:
+  rewrites the program-ROM names and CRCs in `mister/Dangun Feveron Disco Fever.mra`. Contents:
   - `BUILD`: the build number, the single source of truth.
   - `PATCHES`: list of `(address, old hex, new hex, description)`. The old bytes are checked before anything is
     written. `text_patch()` builds text replacements padded to the field width. `notice_patches()` word-wraps
@@ -212,9 +212,9 @@ SHA-1s are in `FILES` in `patch.py`.
   - `apply_patches()`: interleave, apply, keep the ROM-check sums, split.
 - `index.html`: web patcher (GitHub Pages), adapted from the owner's Ibara "Show Time" patcher template. It does the
   same thing in the browser, with the same functions (`mraDate`, `footerPatch`, `applyPatches`). It has exactly two
-  downloads: `dfeveronfever.zip` and `Dangun Feveron More Fever.mra` (the repo MRA, embedded as `MRA_TEMPLATE`, with
+  downloads: `dfeveronfever.zip` and `Dangun Feveron Disco Fever.mra` (the repo MRA, embedded as `MRA_TEMPLATE`, with
   the patched names and CRCs filled in). Its footer date comes from that embedded MRA.
-- `mister/Dangun Feveron More Fever.mra`: the project's MiSTer MRA (Cave core), maintained by the owner. Setname
+- `mister/Dangun Feveron Disco Fever.mra`: the project's MiSTer MRA (Cave core), maintained by the owner. Setname
   `dfeveronfever`, zip `dfeveronfever.zip`, and the release date in `<name>`. Running `patch.py` keeps its
   program-ROM CRCs current and writes the build number into `<name>` after "Build"
   (`(26/11/21 Build 1)`, see `mra_with_build()`). The web page's MRA download does the same.

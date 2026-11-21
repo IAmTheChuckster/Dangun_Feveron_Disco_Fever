@@ -4,7 +4,7 @@
 Patches the 68000 program ROMs of your own `dfeveron` dump (cv01-u33.bin / cv01-u34.bin).
 Input: a MAME romset zip (dfeveron.zip, or feversos.zip containing the dfeveron/ folder) or a folder
 with the loose files. Output: a complete dfeveronfever.zip romset; the patched program ROMs are renamed cv01-u33fever.bin /
-cv01-u34fever.bin. The CRCs in mister/Dangun Feveron More Fever.mra are updated to match.
+cv01-u34fever.bin. The CRCs in mister/Dangun Feveron Disco Fever.mra are updated to match.
 
     python patch.py feversos.zip                 -> dfeveronfever.zip next to this script
     python patch.py feversos.zip -o out/dfeveronfever.zip
@@ -29,7 +29,7 @@ PATCHED = ("cv01-u33.bin", "cv01-u34.bin")
 # Every file the patch changes gets "fever" appended to its name in the output.
 OUT_NAMES = {"cv01-u33.bin": "cv01-u33fever.bin", "cv01-u34.bin": "cv01-u34fever.bin"}
 ZIP_NAME = "dfeveronfever.zip"
-MRA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mister", "Dangun Feveron More Fever.mra")
+MRA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mister", "Dangun Feveron Disco Fever.mra")
 
 # Build number: bump on every new build and log it in dev_notes/BUILDS.md. `--write-web` copies it to index.html.
 BUILD = 15
@@ -646,7 +646,7 @@ CHECKSUM_FILL = (0x0AF000, 0x0AFC00)
 
 
 def mra_date(mra):
-    """The YY/MM/DD date in the MRA <name>, e.g. 'Dangun Feveron More Fever (26/11/21 Build)'."""
+    """The YY/MM/DD date in the MRA <name>, e.g. 'Dangun Feveron Disco Fever (26/11/21 Build)'."""
     m = re.search(r"<name>[^<]*?(\d\d/\d\d/\d\d)[^<]*</name>", mra)
     if not m:
         raise ValueError("no YY/MM/DD date found in the MRA <name>")
