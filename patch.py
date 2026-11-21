@@ -32,7 +32,7 @@ ZIP_NAME = "dfeveronfever.zip"
 MRA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mister", "Dangun Feveron More Fever.mra")
 
 # Build number: bump on every new build and log it in dev_notes/BUILDS.md. `--write-web` copies it to index.html.
-BUILD = 14
+BUILD = 15
 
 
 def text_patch(addr, old, new, desc):
@@ -558,7 +558,7 @@ PATCHES += [
 # becomes a call that does it and, when the count divides by BOMB_ITEM_EVERY, spawns item kind 3 (the bomb pickup;
 # its handler at 0x6ECF4 adds 1 to the bomb stock, max 4) through the item spawner 0x6E5C0 at a fixed position
 # near the 1UP drop point. The count resets every EXTEND_EVERY (a multiple of BOMB_ITEM_EVERY), so no extra counter.
-BOMB_ITEM_EVERY = 250
+BOMB_ITEM_EVERY = 100
 assert EXTEND_EVERY % BOMB_ITEM_EVERY == 0
 BOMB_ITEM_HOOK = EXTEND_HOOK + len(EXTEND_CODE) // 2 + 0x10
 BOMB_ITEM_CODE = asm(BOMB_ITEM_HOOK, [
@@ -610,6 +610,19 @@ PATCHES += [
     (0x00503C, "363c2200", f"363c{TITLE_PLEASE_Y:04x}", "title: PLEASE INSERT COIN lower"),
     (0x0063B0, "337c22000000", f"337c{TITLE_PLEASE_Y:04x}0000", "title: PRESS START lower"),
 ]
+
+# Build 15: the TLB (true last boss, stage index 5) is unlocked even if you died. When the final stage (index 4)
+# starts, 0xF94 sets the TLB flag (`st.b $37(a5)`) only if $10E816 == 0, neither player continued ($103FA4 /
+# $103FA8 still 0x100) and neither player died ($10529C / $10529E still 0; set to 1 on respawn at 0xC22A / 0xC29A).
+# The two death tests' branches become nops. (The no-continue rule is left as it is.)
+# NOT ENABLED YET: a test run that died still didn't reach the TLB, so this isn't proven. Set TLB_ANY_DEATHS = True
+# once it is confirmed in MAME.
+TLB_ANY_DEATHS = False
+if TLB_ANY_DEATHS:
+    PATCHES += [
+        (0x000FC8, "66000010", "4e714e71", "TLB even if you died: P1 death check"),
+        (0x000FD2, "66000006", "4e714e71", "TLB even if you died: P2 death check"),
+    ]
 
 PATCHES += [
     (KILL_HOOK, "ff" * (len(KILL_HOOK_CODE) // 2), KILL_HOOK_CODE, "bomb kills drop a discoman (hook)"),

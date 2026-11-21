@@ -23,6 +23,9 @@ sta/
 *.png
 error.log
 
+# Generated MAME test schedules (python tools/make_tap_fire.py tools/tap_fire.txt)
+tools/tap_fire.txt
+
 # Local editor / tool settings
 .claude/settings.local.json
 .claude/launch.json

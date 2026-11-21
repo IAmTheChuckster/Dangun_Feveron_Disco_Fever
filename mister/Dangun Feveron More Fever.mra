@@ -1,5 +1,5 @@
 <misterromdescription>
-  <name>Dangun Feveron More Fever (26/11/21 Build 14)</name>
+  <name>Dangun Feveron More Fever (26/11/21 Build 15)</name>
   <mameversion>0289</mameversion>
   <setname>dfeveronfever</setname>
   <year>2026</year>
@@ -12,8 +12,8 @@
   <rom index="0" zip="dfeveronfever.zip" md5="none" address="0x30000000">
     <!-- prog ROM -->
     <interleave output="16">
-      <part name="cv01-u34fever.bin" crc="91204cf8" map="01" />
-      <part name="cv01-u33fever.bin" crc="8e15045f" map="10" />
+      <part name="cv01-u34fever.bin" crc="db6810e7" map="01" />
+      <part name="cv01-u33fever.bin" crc="9d271333" map="10" />
     </interleave>
 
     <!-- EEPROM -->

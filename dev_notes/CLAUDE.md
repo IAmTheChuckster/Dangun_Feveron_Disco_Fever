@@ -101,13 +101,42 @@ the short "original bytes" in `PATCHES`, which the patchers use to check they're
   counts every discoman collected by either player in `$10510C` (not on stage index 6). Stock: once, at exactly
   2000. Build 11: every 1000 (the counter is reset each time).
 - **Bomb item:** item kind 3 ("B"); its pickup at 0x6ECF4 adds 1 to the bomb stock (P1 `$105A3B`, P2 `$105A7B`,
-  max 4). Items are spawned with 0x6E5C0 (d0 = kind, d2 = position long). Build 12 drops one every 250 pickups,
-  from the same count as the 1UP.
+  max 4). Items are spawned with 0x6E5C0 (d0 = kind, d2 = position long). Build 12 drops one every 250 pickups
+  (Build 15: every 100), from the same count as the 1UP.
 - **Title screen text:** routine 0x650E draws a 0-terminated string (a0) with colour d1 at height d3 (larger =
   higher on the rotated screen) from start d4 (0x200 per character; strings are centred with leading spaces on a
   30-column line). Lines: PLEASE INSERT COIN 0x503C (stock height 0x2200), C BUTTON 0x1800 (only when the C button
   is enabled), RANK 0x1200, (c)1998 0x0C00, NOT FOR SALE 0x0780. With a credit, the animated PRESS START text is drawn
   by 0x644E from a 22-letter buffer at `$10CC32`, set up at 0x63A2 (height at 0x63B0). The wave only cycles colours.
+- **Stages, rank and the hidden boss:** 7 stages (index `$1052D8` 0-6); after stage index 6 it loops to 0 (0x474E).
+  Each player has a rank counter (P1 `$105118`, P2 `$10511C`): shots/bombs add to it (0xAE26 ...); a death takes off
+  a quarter (0xC3B4), losing the last life clears it, and 0x652C8 clears both. 0x49706 turns them into a difficulty
+  value `$105114` (max 0x7F). Per the owner, **the TLB (true last boss) only appears if you don't die**; the code
+  check for that hasn't been found yet (not in the stage loop or the rank code; likely in the final boss setup).
+  - Owner's video: after the stage-7 boss dies (big points popup), the screen flashes white, the same red corridor
+    keeps scrolling, green Japanese dialogue lines appear, then the TLB (big green mech with two side pods)
+    arrives. So the TLB is a continuation of stage index 6 after its boss, not a separate stage.
+  - Deaths: the death code (0xC394) sets `$1050E9` bit 5 (P1) / 6 (P2); 0x2A68 / 0x2B1A clear it and, for stage
+    index < 6, add 1 to a per-stage death table `$1012D2 + 2*stage` (shared by both players). That table and the
+    statistics block around it are copied to `$101630...` (0x6A8B2) and shown by 0x6C778 / 0x6C91C (a bookkeeping
+    screen); no other code reads them, so they're probably not the TLB check.
+  - Checked and ruled out: the final-stage tests at 0x3880, 0x3C7E, 0x4D44, 0x6E0C (stage-clear timing: 0x1068
+    frames on stage index 6 vs 0x960), 0x13874, 0x13920, 0x17DA8, 0x374D8, 0x46684, 0x46BEE, 0x53762, 0x675C6.
+  - **The TLB rule (found):** the game has 5 normal stages; the red-corridor final stage is index 4, and the TLB is
+    stage index 5, entered after the index-4 boss. When the final stage starts, 0xF94 sets the TLB flag
+    (`st.b $37(a5)`) only if `$10E816` == 0, neither player continued (`$103FA4` / `$103FA8` still 0x100; reset at
+    game start 0x3000 / 0x8252) and neither player died (`$10529C` / `$10529E` still 0; set to 1 on respawn at
+    0xC22A / 0xC29A). Otherwise the index-4 boss leads to the ending tally (disco-ball screen).
+  - Confirmed in MAME: a run with no deaths went from index 4 to index 5 (the TLB); a run with deaths went to the
+    ending. `patch.py` has the change that nops the two death tests (0xFC8 / 0xFD2) behind `TLB_ANY_DEATHS`,
+    switched off because a test game with deaths still didn't reach the TLB (that run ended at the final stage, so
+    the result is unclear). Next: log the five values at 0xF94 in a run with deaths (`tools/tlb_check.lua`).
+  - MAME testing notes: button 3 (rapid fire) is disabled in this MAME setup's settings, so scripted runs must tap
+    button 1 (`tools/make_tap_fire.py`). `tools/final_stage.lua` (test-only): `FS_LIVES=3` keeps lives topped up
+    (deaths still happen); forcing `$3E` = 0xFF only skips enemy-body collisions (0x9F3A is the only check) and
+    seems to stop the ship firing; blocking the hit bit (bit 8 of `$105A16`; tested at 0xA898) on every write stops
+    the ship spawning. Forcing `$1052D8` before a stage loads gives a broken stage. Save states (`STATE=`) hang with
+    these Lua scripts, so runs start from power-on (~21000 frames per stage when firing).
 - **"STAGE HIGH /" label:** one sprite, tile 0x0FE9 x 4 tiles (size 0x0104) at x 0x4D00, y 0x0EC0, drawn at
   0x644E4; `HIGH /` is in its last 2 tiles. The high-score number next to it is drawn separately.
 - **Score box frame:** sprites drawn at 0x63D24 (P1) / 0x640E6 (P2 mirrored, growing the other way): middle

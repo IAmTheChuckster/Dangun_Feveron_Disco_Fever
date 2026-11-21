@@ -2,6 +2,19 @@
 
 One entry per build, newest first. The build number is `BUILD` in `patch.py` (copied to `index.html`).
 
+## Build 15 (2026-11-21)
+- **Bomb item every 100 discomen collected** (was 250, Build 12): `BOMB_ITEM_EVERY = 100`. Drops at 100 / 200 /
+  ... of each 1000; at 1000 a bomb item and a 1UP both drop.
+- The TLB "even if you died" change (see CLAUDE.md) is in `patch.py` but **switched off** (`TLB_ANY_DEATHS = False`):
+  a test game with deaths still didn't reach the TLB, so it isn't proven yet.
+- Measured in MAME (attract demo; test-only helper set the pickup count to 96 and later 196): bomb items appeared
+  at 100 and at 200; P2 collected one and their bomb stock went 3 -> 4.
+- Footer `26/11/21 BUILD 15`; MRA name `(26/11/21 Build 15)`.
+- Output (from `feversos.zip`):
+  - `cv01-u33fever.bin`: CRC32 `9d271333`, SHA-1 `c9effc9d90ddf0f3a12bd56350dbf76439165b64`
+  - `cv01-u34fever.bin`: CRC32 `db6810e7`, SHA-1 `dbb5809bdce22b9d1d7d0ba055c87405e83ad04c`
+- Tested: MAME 0.289; the web page gives the same CRCs. Not tested on MiSTer or by hand.
+
 ## Build 14 (2026-11-21)
 - **Title lines moved up**, from the owner's mock-up taken with the C BUTTON line showing (in Build 13 the start
   line sat right on top of it). DISCO FEVER 0x2200 -> 0x2400 (further into the purple stripes); PLEASE INSERT COIN /

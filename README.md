@@ -13,7 +13,7 @@ I did all the testing and planning.
 - The notice screen shows an unofficial-project disclaimer, with the release date and build number in the footer.
 - The score shown at the top left is your running total for the whole game; it no longer restarts at 0 each stage, and the score box widens to fit up to 8 digits. The word STAGE is removed from STAGE HIGH to make room.
 - Extra life: a 1UP drops every 1000 discomen collected (originally once, at 2000).
-- A bomb item drops every 250 discomen collected.
+- A bomb item drops every 100 discomen collected.
 - Hold button 1 to move at the slowest speed; let go to return to your selected speed.
 - BOMB-type powerful shot: up to 8 bombs in flight instead of 3.
 - Each discoman adds 2 to the counter instead of 1, and the counter starts at 0, so pickups go +2, +4, +6 ... and every multiple of 10 shows the big gold number (1.5x size at every 100, 2x at every 1000). The counter box still stops at 999, but the popup values and score keep growing up to 9999.
