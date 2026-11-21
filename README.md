@@ -2,8 +2,6 @@
 
 A gameplay patch for `Dangun Feveron (Japan, 98/09/17 VER.)`<br>
 This repository holds only source, tools and notes. **No ROM data is included**; you patch your own legally owned dump.
-## To Do:
-
    
 ## About
 Why did I make this? Because it's fun and for my own personal research to see the capabilities of Claude.<br>
