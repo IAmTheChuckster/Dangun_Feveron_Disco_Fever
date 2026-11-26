@@ -8,7 +8,12 @@ local after = tonumber(os.getenv("SS_AFTER") or "2")
 local frame = 0
 emu.register_frame_done(function()
   frame = frame + 1
-  if frame == f then sp:write_u32(0x103fae, slot); sp:write_u16(0x1052d8, 1) end
+  if frame == f then
+    sp:write_u32(0x103fae, slot); sp:write_u16(0x1052d8, 1)
+    -- optional SS_HIGH (hex BCD): stage high entry for stage index 1 ($103FEA + 4)
+    local hi = os.getenv("SS_HIGH")
+    if hi then sp:write_u32(0x103fee, tonumber(hi, 16)) end
+  end
   if frame == f + after then
     manager.machine.video:snapshot()
     print(string.format("live score $103DE8 = %08x", sp:read_u32(0x103de8)))

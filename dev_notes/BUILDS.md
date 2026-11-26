@@ -2,6 +2,92 @@
 
 One entry per build, newest first. The build number is `BUILD` in `patch.py` (copied to `index.html`).
 
+## Build 29 (2026-11-26)
+- **Rank hides during a boss:** not drawn while `$10518A` (the HUD's boss slide) is non-zero, so it disappears as
+  the panel starts moving away and comes back when the panel is fully back. (Asked for as a fade; a real fade isn't
+  done.) MAME: with `$10518A` held at 0x400 the rank is gone; before that it shows.
+- Tried and dropped (owner said forget it): widening the tally box further so its inner right edge clears the 8th
+  digit. Partial redraws of the box sprite gave wrong tiles; the box is as in Build 26-28.
+- Output (from `feversos.zip`):
+  - `cv01-u33fever.bin`: CRC32 `3c4ee557`, SHA-1 `81a43d0c664e135f15dc92f1ae8865b635f44da3`
+  - `cv01-u34fever.bin`: CRC32 `cca09204`, SHA-1 `f0fa946a23d81b423f5d60b449233cd5a979b4f6`
+- Tested: MAME 0.289 (slide forced by script). Not tested on MiSTer.
+
+## Build 28 (2026-11-26)
+- **Rank follows the HUD's boss slide (up):** every HUD piece takes `$10518A` (capped at 0x600), subtracts it from its
+  start and adds it to its height (e.g. 0x63D62); the rank now does the same, on top of the `$10518C` slide from
+  Build 26. MAME: with `$10518A` held at 0x400 the panel and the rank move up together.
+- Output (from `feversos.zip`):
+  - `cv01-u33fever.bin`: CRC32 `9ecf4705`, SHA-1 `9b6cc697690c76a48ab38a48ae1163230bbc32d4`
+  - `cv01-u34fever.bin`: CRC32 `46f00315`, SHA-1 `3b678d0f539229a150db48ec015b81424ebb696d`
+- Tested: MAME 0.289 as above (slide forced by script, not a real boss). Not tested on MiSTer.
+
+## Build 27 (2026-11-26)
+- Same code as Build 26, renumbered: Builds 17-26 were handed out for testing still labelled Build 16. From here
+  every build handed out gets the next number. Footer `26/11/26 BUILD 27`.
+- Output (from `feversos.zip`):
+  - `cv01-u33fever.bin`: CRC32 `489ce03d`, SHA-1 `838a84d5afc226020f8be07bb2e2f79720570aad`
+  - `cv01-u34fever.bin`: CRC32 `a0789fec`, SHA-1 `c2a3095c58d002f9f2218eac4acb78d1f32eee2b`
+
+## Build 26 (2026-11-26, labelled Build 16)
+- Rank slides with the P1 HUD (`$10518C`) and hides when the panel is fully away; magnet 18 px at 2 px/frame;
+  tally box drawn twice unzoomed (seamless). u33 `31df4d1b`, u34 `6eaa9aa1`. The owner's video shows the panel
+  slides **up** for a boss, which this doesn't follow (fixed in Build 28).
+
+## Build 25 (2026-11-26, labelled Build 16)
+- Rank 2 px further left (start 0x0580). u34 `e4fe2179`.
+
+## Build 24 (2026-11-26, labelled Build 16)
+- Rank 4 px left (start 0x0600). u34 `c9177e52`.
+
+## Build 23 (2026-11-26, labelled Build 16)
+- Rank 6 px lower (height 0x3F80). u34 `649f4974`.
+
+## Build 22 (2026-11-26, labelled Build 16)
+- Rank 6 px lower (height 0x4100). u34 `a1d80d47`.
+
+## Build 21 (2026-11-26, labelled Build 16)
+- Rank moved right of the man icon (0x0700, 0x4280) so it doesn't overlap it. u34 `e81fec93`.
+
+## Build 20 (2026-11-26, labelled Build 16)
+- Rank moved to the bottom-left of the HUD (0x0100, 0x3E00); it overlapped the man icon. u34 `a0fa290d`.
+
+## Build 19 (2026-11-26, labelled Build 16)
+- `NEXT BOMB N` removed. u33 `8debc1fa`, u34 `cb7e3f8d`.
+
+## Build 18 (2026-11-26, labelled Build 16)
+- Bomb items no longer pulled to the player (boss-bomb auto-collect dropped). u33 `2bb2d50a`, u34 `37b13a14`.
+
+## Build 17 (2026-11-26, labelled Build 16)
+- Magnet fixed: object positions are 0x100 per pixel, so the range became 0x1800 (24 px), pull 3 px/frame; then 5
+  px/frame (u34 `6cab5899`, then `6fecde44`). Tally zoom 1.0625x (still seamed).
+
+## Build 16 (2026-11-26)
+- **MRA date 26/11/26** (footer `26/11/26 BUILD 16`). The owner renamed the MRA to `Dangun Feveron Disco Fever.mra`.
+- **Score box at 8 digits:** the frame's own 6+ digit test only looks at digits 10^5/10^6 (both 0 in e.g. 20079919),
+  so VAL now also marks 8-digit scores as 6+ digits. MAME: `20079919` fits inside the box.
+- **8-digit stage score and STAGE HIGH:** per-stage cap 9,999,999 -> 99,999,999 (0x637D8 / 0x637E0); STAGE HIGH digit
+  masks include the 8th digit and the last step is a hook (`HIGH8_HOOK`). MAME: `HIGH /12345678`.
+- **Discomen within 18 px are pulled in** (`MAGNET_HOOK`, from FRAME_HOOK every frame): range 0x1200, up to 0x200
+  (2 px) per axis per frame, toward each player in play. Positions are 0x100 per pixel (a first try assumed 0x40,
+  which made the range only ~6 px). The owner tuned range and speed by hand (24 px/3 px, 24 px/5 px, then 18 px/2 px).
+- Bomb items are **not** pulled: the owner dropped the boss-bomb auto-collect so the B from every 100 discomen shows
+  and floats normally. No `NEXT BOMB N` text either (tried, then removed).
+- **Rank as a percentage** right of the man icon, left-aligned (`HUD_HOOK`, title text routine 0x650E; only while a
+  player is in play). It slides with the P1 HUD panel (`$10518C`, subtracted from the start like 0x63D3C does) and
+  isn't drawn when the panel is fully away (boss). Rank % = live difficulty sum (formula of 0x49706 before its /8:
+  `$105110`/4 + rank counter/256, averaged over two players, capped 127) * 100 / 127. MAME: `0%` early in stage 1;
+  with `$10518C` held at 0x800 the rank moves left with the panel.
+- **End-of-game stage tally at 8 digits, wider box:** the five stage rows call the game's own 8-digit routine 0x1DA8
+  instead of 0x1D5E; `TALLY_BOX_HOOK` draws the box sprite twice, unzoomed: 8 px to the right, then at its own place on
+  top, so it is 8 px wider with no seams (zooming it, 1.08x / 1.0625x, left seams between tiles). MAME full game: all
+  rows show 8 digits in a solid box; the original box's right edge shows as a line just after the last digit.
+- All new code starts on an even address (an odd one would crash the 68000); the TLB change stays off.
+- Output (from `feversos.zip`):
+  - `cv01-u33fever.bin`: CRC32 `31df4d1b`, SHA-1 `9c358aec0a40feb4c06e494195ccfafc7275e9a8`
+  - `cv01-u34fever.bin`: CRC32 `6eaa9aa1`, SHA-1 `b54f2186d46da641cb83d75786c9f428b9af6f4f`
+- Tested: MAME 0.289 as above; the web page gives the same CRCs. Not tested on MiSTer or by hand.
+
 ## Build 15 (2026-11-21)
 - **Bomb item every 100 discomen collected** (was 250, Build 12): `BOMB_ITEM_EVERY = 100`. Drops at 100 / 200 /
   ... of each 1000; at 1000 a bomb item and a 1UP both drop.

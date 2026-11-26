@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Dangun Feveron gameplay patcher.
 
 Patches the 68000 program ROMs of your own `dfeveron` dump (cv01-u33.bin / cv01-u34.bin).
@@ -32,7 +32,7 @@ ZIP_NAME = "dfeveronfever.zip"
 MRA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mister", "Dangun Feveron Disco Fever.mra")
 
 # Build number: bump on every new build and log it in dev_notes/BUILDS.md. `--write-web` copies it to index.html.
-BUILD = 15
+BUILD = 29
 
 
 def text_patch(addr, old, new, desc):
@@ -164,6 +164,9 @@ def asm(base, items):
 # The per-frame work hooks the discoman update loop: `lea $10C5F2,a6` at 0x6CE08 becomes `jsr FRAME_HOOK`.
 BOMB_PULL, BOMB_MARKS = 0x10B400, 0x10B410   # RAM, inside a block that is never used (always 0 in every dump)
 BOMB_TICK = 0x10B402                         # byte, counts frames while a bomb is active (Build 6)
+MAGNET_HOOK = 0x09EA40                       # Build 16 magnet routine (code defined further down)
+HUD_HOOK = 0x09EC00                          # Build 16 NEXT BOMB / rank text routine (defined further down)
+MAGNET_RANGE, MAGNET_STEP = 0x1200, 0x200   # 18 pixels (0x100 per pixel); pull speed 2 px per frame
 HIT_EVERY = 4                                # Build 6: a discoman per bomb-hit enemy every HIT_EVERY frames (power of 2)
 PULL_FRAMES, PULL_STEP = 90, 0x400
 KILL_HOOK, FRAME_HOOK = 0x09E440, 0x09E4C0
@@ -242,6 +245,8 @@ FRAME_HOOK_CODE = asm(FRAME_HOOK, [
     "45ea0020",                # lea    $20(a2), a2
     ("dbra", 7, "hl"),          # dbra   d7, .hl
     ("L", "done"),
+    f"4eb9{MAGNET_HOOK:08x}",  # jsr    MAGNET_HOOK         ; Build 16: pull in discomen near the players
+    f"4eb9{HUD_HOOK:08x}",     # jsr    HUD_HOOK            ; Build 16: NEXT BOMB countdown and rank %
     "4cdf7fff",                # movem.l (a7)+, d0-d7/a0-a6
     "4df90010c5f2",            # lea    $10C5F2, a6         ; the instruction we replaced
     "4e75",                    # rts
@@ -421,6 +426,9 @@ def box_hooks(base, player):
         ("L", "v1"),
         "2017", "0280f0000000", ("b8", "67", "v2"),           # move.l (a7),d0 / andi.l #$F0000000,d0 / beq.s .v2
         f"13fc0002{flag:08x}",                               # move.b #2, level              ; 8 digits
+        "009700100000",                                      # ori.l #$00100000,(a7)  ; the game's own 6+ digit test
+                                                             # looks at digits 10^5/10^6 only, which can both be 0
+                                                             # (e.g. 20079919): make it see 6+ digits
         ("L", "v2"),
         "201f", "4e75",                                      # pop d0 / rts
         ("L", "extra"),
@@ -617,12 +625,164 @@ PATCHES += [
 # The two death tests' branches become nops. (The no-continue rule is left as it is.)
 # NOT ENABLED YET: a test run that died still didn't reach the TLB, so this isn't proven. Set TLB_ANY_DEATHS = True
 # once it is confirmed in MAME.
-TLB_ANY_DEATHS = False
+TLB_ANY_DEATHS = os.environ.get("DF_TEST_TLB") == "1"   # test builds only, until proven
 if TLB_ANY_DEATHS:
     PATCHES += [
         (0x000FC8, "66000010", "4e714e71", "TLB even if you died: P1 death check"),
         (0x000FD2, "66000006", "4e714e71", "TLB even if you died: P2 death check"),
     ]
+
+# Build 16: 8-digit stage scores and STAGE HIGH. The per-stage score was capped at 9,999,999 (0x637D8 / 0x637E0,
+# BCD); now 99,999,999. The STAGE HIGH number (0x64530, digit routine 0x64CAC) counted digits with masks that
+# ignored the 8th; the first two masks now include it, and the last step (`andi.w #$F00,d1 / beq / addi.w #$200,d4 /
+# moveq #6,d7`, 12 bytes) becomes a call that adds the 7th and 8th digit steps.
+HIGH8_HOOK = (TITLE_HOOK + len(TITLE_DATA) // 2 + 0x10 + 1) & ~1   # code must start on an even address
+HIGH8_CODE = asm(HIGH8_HOOK, [
+    "3401", "0242ff00", ("b8", "67", "out"),   # move.w d1,d2 / andi.w #$FF00,d2 / beq.s .out   ; 7+ digits?
+    "06440200", "7e06",                       # addi.w #$200,d4 / moveq #6,d7
+    "0242f000", ("b8", "67", "out"),           # andi.w #$F000,d2 / beq.s .out                  ; 8 digits?
+    "06440200", "7e07",                       # addi.w #$200,d4 / moveq #7,d7
+    ("L", "out"),
+    "4e75",
+])
+PATCHES += [
+    (0x0637D8, "0c9009999999", "0c9099999999", "8-digit stage score: cap compare"),
+    (0x0637E0, "20bc09999999", "20bc99999999", "8-digit stage score: cap value"),
+    (HIGH8_HOOK, "ff" * (len(HIGH8_CODE) // 2), HIGH8_CODE, "STAGE HIGH 8 digits (hook)"),
+    (0x064CC2, "02410fff", "0241ffff", "STAGE HIGH 8 digits: mask"),
+    (0x064CCE, "02410ff0", "0241fff0", "STAGE HIGH 8 digits: mask"),
+    (0x064CDA, "02410f00670606440200 7e06".replace(" ", ""), f"4eb9{HIGH8_HOOK:08x}4e714e714e71", "STAGE HIGH 8 digits: last steps"),
+]
+
+# Build 16: discomen within MAGNET_RANGE (24 px) of a player are pulled in and collected, at all times. Called every
+# frame from FRAME_HOOK's exit (registers are already saved there). For each player object in play (P1 $105A16,
+# P2 $105A56; word 0 bit 15 = in play), every uncollected discoman (pool $10C5F2, 50 x 0x20; byte 1 bit 7 = already a
+# value popup) within range on both axes moves up to MAGNET_STEP per axis per frame toward that player; the game's
+# normal pickup collects it on contact.
+MAGNET_CODE = asm(MAGNET_HOOK, [
+    "43f900105a16", ("b8", "61", "one"),      # lea $105A16,a1 / bsr.s .one     ; P1
+    "43f900105a56", ("b8", "61", "one"),      # lea $105A56,a1 / bsr.s .one     ; P2
+    "4e75",
+    ("L", "one"),
+    "4a51", ("b8", "6a", "ret"),              # tst.w (a1) / bpl.s .ret          ; player not in play
+    "4ca900300006",                          # movem.w $6(a1), d4-d5            ; player position
+    "45f90010c5f2", "7e31",                  # lea $10C5F2,a2 / moveq #49,d7
+    ("L", "lp"),
+    "4a52", ("b8", "6a", "nx"),               # tst.w (a2) / bpl.s .nx           ; free slot
+    "082a00070001", ("b8", "66", "nx"),       # btst #7,$1(a2) / bne.s .nx       ; already collected (popup)
+    "3004", "906a0006",                      # move.w d4,d0 / sub.w $6(a2),d0    ; dx
+    "3200", ("b8", "6a", "p1"), "4441",       # move.w d0,d1 / bpl.s +2 / neg.w d1
+    ("L", "p1"),
+    f"0c41{MAGNET_RANGE:04x}", ("b8", "6e", "nx"),  # cmpi.w #RANGE,d1 / bgt.s .nx
+    "3405", "946a0008",                      # move.w d5,d2 / sub.w $8(a2),d2    ; dy
+    "3202", ("b8", "6a", "p2"), "4441",       # move.w d2,d1 / bpl.s +2 / neg.w d1
+    ("L", "p2"),
+    f"0c41{MAGNET_RANGE:04x}", ("b8", "6e", "nx"),  # cmpi.w #RANGE,d1 / bgt.s .nx
+    ("b8", "61", "clamp"), "d16a0006",        # bsr.s .clamp / add.w d0,$6(a2)
+    "3002", ("b8", "61", "clamp"), "d16a0008",  # move.w d2,d0 / bsr.s .clamp / add.w d0,$8(a2)
+    ("L", "nx"),
+    "45ea0020", ("dbra", 7, "lp"),            # lea $20(a2),a2 / dbra d7,.lp
+    ("L", "ret"),
+    "4e75",
+    ("L", "clamp"),                          # clamp d0 to +-MAGNET_STEP
+    f"0c40{MAGNET_STEP:04x}", ("b8", "6f", "c1"), f"303c{MAGNET_STEP:04x}",
+    ("L", "c1"),
+    f"0c40{-MAGNET_STEP & 0xFFFF:04x}", ("b8", "6c", "c2"), f"303c{-MAGNET_STEP & 0xFFFF:04x}",
+    ("L", "c2"),
+    "4e75",
+])
+assert HIGH8_HOOK + len(HIGH8_CODE) // 2 <= MAGNET_HOOK
+PATCHES += [(MAGNET_HOOK, "ff" * (len(MAGNET_CODE) // 2), MAGNET_CODE, "discomen within 24 px pulled in (hook)")]
+
+# Build 16: the end-of-game stage tally shows 8-digit stage scores, in a slightly wider box. Each stage row (0x1864 ...)
+# draws its score with 0x1D5E (7 digits); the game's own 8-digit version is at 0x1DA8 (one more digit, starting
+# 0x200 further right), so the five row calls are pointed at it. The box is one 6-tile sprite (tile 0x08E1, drawn
+# with `jsr $79E6A` at 0x1ABA P1 / 0x1B08 P2) with no wider tiles, so TALLY_BOX_HOOK draws it twice, unzoomed:
+# once 8 px to the right, then at its own place on top, giving one seamless box 8 px wider
+# (zooming it left seams between tiles).
+
+TALLY_BOX_HOOK = (HUD_HOOK + 0x140 + 1) & ~1   # after HUD_DATA (0x120 code + label)
+TALLY_BOX_CODE = asm(TALLY_BOX_HOOK, [
+    # two unzoomed copies: one 8 px to the right first, then the original on top -> one solid box 8 px wider
+    "48e7fffe",                              # movem.l d0-d7/a0-a6,-(a7)
+    "06440200",                              # addi.w #$200, d4           ; 8 px right
+    "4eb900079e6a",                          # jsr    $79E6A
+    "4cdf7fff",                              # movem.l (a7)+, d0-d7/a0-a6
+    "4ef900079e6a",                          # jmp    $79E6A              ; original position, returns to caller
+])
+
+
+def _bsr_to(at, target):
+    return f"6100{(target - (at + 2)) & 0xFFFF:04x}"
+
+
+PATCHES += [(TALLY_BOX_HOOK, "ff" * (len(TALLY_BOX_CODE) // 2), TALLY_BOX_CODE, "stage tally: wider box (hook)")]
+PATCHES += [(a, _bsr_to(a, 0x1D5E), _bsr_to(a, 0x1DA8), "stage tally: 8-digit stage score")
+            for a in (0x001890, 0x0018E0, 0x001932, 0x001984, 0x0019D6)]
+PATCHES += [(a, "4eb900079e6a", f"4eb9{TALLY_BOX_HOOK:08x}", "stage tally: wider box") for a in (0x001ABA, 0x001B08)]
+
+# Build 16: two HUD texts, drawn every frame from FRAME_HOOK (after the magnet) with the title text routine 0x650E
+# (a0 = 0-terminated string, d1 = colour, d3 = height, d4 = start; d4 advances 0x200 per character):
+#  * "NEXT BOMB N" at the bottom, right of the bomb icons: N = BOMB_ITEM_EVERY - (pickup count $10510C mod
+#    BOMB_ITEM_EVERY), counting down to the next bomb item;
+#  * the rank as a percentage under the ship icons: the difficulty value $105114 (0..127, from the rank counters,
+#    0x49706) * 100 / 127, e.g. "57%".
+HUD_BUF = 0x10B4A0                           # RAM: 8-byte text buffer for the numbers
+NEXTB_X, NEXTB_Y = 0x0E00, 0x0100            # start / height of NEXT BOMB: same line as the bomb icons (screen is rotated)
+RANK_X, RANK_Y = 0x0580, 0x3F80              # start / height of the rank text (right of the man icon)
+HUD_COLOUR = 0x3A30                          # same gold as DISCO FEVER / C BUTTON
+assert MAGNET_HOOK + len(MAGNET_CODE) // 2 <= HUD_HOOK
+_hud_label_addr = HUD_HOOK + 0x120           # "NEXT BOMB " stored after the code (code is < 0x120 bytes)
+HUD_CODE = asm(HUD_HOOK, [
+    # --- number -> text: d1 = value (0..999), writes digits without leading zeros + suffix byte in d6 at a1 ---
+    ("b8", "60", "main"),
+    ("L", "num"),
+    "7400", "3401",                          # moveq #0,d2 / move.w d1,d2
+    "0c420064", ("b8", "65", "n2"),           # cmpi.w #100,d2 / bcs.s .n2
+    "84fc0064", "3602", "06030030", "12c3",   # divu #100,d2 / move.w d2,d3 / addi.b #'0',d3 / move.b d3,(a1)+
+    "4842", "48c2", "84fc000a",              # swap d2 / ext.l d2 / divu #10,d2   ; tens (low) / ones (high)
+    "3602", "06030030", "12c3", ("b8", "60", "n3"),  # tens digit (always, after a hundreds digit)
+    ("L", "n2"),
+    "84fc000a",                              # divu #10,d2
+    "4a42", ("b8", "67", "n3"),               # tst.w d2 / beq.s .n3          ; no tens digit under 10
+    "3602", "06030030", "12c3",              # tens digit
+    ("L", "n3"),
+    "4842", "06020030", "12c2",              # swap d2 / addi.b #'0',d2 / move.b d2,(a1)+   ; ones digit
+    "12c6", "4211", "4e75",                  # move.b d6,(a1)+ (suffix, 0 = none) / clr.b (a1) / rts
+    ("L", "main"),
+    # only while a player is in play (not on the tally / attract screens)
+    "4a7900105a16", ("b8", "6b", "inplay"),   # tst.w $105A16 / bmi.s .inplay
+    "4a7900105a56", ("b8", "6b", "inplay"),   # tst.w $105A56 / bmi.s .inplay
+    "4e75",                                  # rts
+    ("L", "inplay"),
+    # RANK %
+    # live difficulty, same formula as 0x49706 before its final /8: ($105110/4) + rank counter/256 (both players
+    # averaged when two are playing), capped at 127
+    "7200", "323900105110", "e449",          # moveq #0,d1 / move.w $105110,d1 / lsr.w #2,d1
+    "243900105118", "e08a",                  # move.l $105118,d2 / lsr.l #8,d2     ; P1 rank counter
+    "4a7900105a56", ("b8", "6a", "rone"),     # tst.w $105A56 / bpl.s .rone           ; P2 not in play
+    "26390010511c", "e08b", "d483", "e28a",  # move.l $10511C,d3 / lsr.l #8,d3 / add.l d3,d2 / lsr.l #1,d2
+    ("L", "rone"),
+    "d282", "0c810000007f", ("b8", "63", "rok"), "727f",  # add.l d2,d1 / cmpi.l #127,d1 / bls.s .rok / moveq #127,d1
+    ("L", "rok"),
+    "c2fc0064", "82fc007f",                  # mulu #100,d1 / divu #127,d1        ; percent
+    f"43f9{HUD_BUF:08x}", "7c25", f"4eb9{HUD_HOOK + 2:08x}",  # lea BUF,a1 / moveq #'%',d6 / jsr .num
+    f"41f9{HUD_BUF:08x}",
+    f"323c{HUD_COLOUR:04x}", f"363c{RANK_Y:04x}", f"383c{RANK_X:04x}",
+    "98790010518c",                          # sub.w $10518C,d4   ; slide with the P1 HUD (0x63D3C does the same)
+    "30390010518a", "0c400600", ("b8", "65", "rsl"), "303c0600",  # move.w $10518A,d0 / cap at $600 (as 0x63D62)
+    ("L", "rsl"),
+    "9840", "d640",                          # sub.w d0,d4 / add.w d0,d3   ; the HUD's boss slide (up)
+    "0c791c000010518c", ("b8", "67", "rhid"), # cmpi.w #$1C00,$10518C / beq.s .rhid   ; HUD fully away: don't draw
+    "4a790010518a", ("b8", "66", "rhid"),     # tst.w $10518A / bne.s .rhid   ; HUD moving away for a boss: hide
+    "4eb90000650e",
+    ("L", "rhid"),
+
+    "4e75",
+])
+assert len(HUD_CODE) // 2 <= 0x120, len(HUD_CODE) // 2
+HUD_DATA = HUD_CODE + "4e71" * ((0x120 - len(HUD_CODE) // 2) // 2) + (b"NEXT BOMB \0\0").hex()
+PATCHES += [(HUD_HOOK, "ff" * (len(HUD_DATA) // 2), HUD_DATA, "NEXT BOMB countdown and rank % (hook + text)")]
 
 PATCHES += [
     (KILL_HOOK, "ff" * (len(KILL_HOOK_CODE) // 2), KILL_HOOK_CODE, "bomb kills drop a discoman (hook)"),

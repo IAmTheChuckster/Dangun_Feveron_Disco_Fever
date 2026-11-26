@@ -1,4 +1,4 @@
-# Dangun Feveron Disco Fever
+﻿# Dangun Feveron Disco Fever
 
 A gameplay patch for `Dangun Feveron (Japan, 98/09/17 VER.)`<br>
 This repository holds only source, tools and notes. **No ROM data is included**; you patch your own legally owned dump.
@@ -11,9 +11,11 @@ I did all the testing and planning.
 ## Change Notes
 - Title screen reads `NOT FOR SALE` instead of `SALES BY NIHON SYSTEM INC.`, and shows `DISCO FEVER` above `PLEASE INSERT COIN`.
 - The notice screen shows an unofficial-project disclaimer, with the release date and build number in the footer.
-- The score shown at the top left is your running total for the whole game; it no longer restarts at 0 each stage, and the score box widens to fit up to 8 digits. The word STAGE is removed from STAGE HIGH to make room.
+- The score shown at the top left is your running total for the whole game; it no longer restarts at 0 each stage, and the score box, STAGE HIGH and the end-of-game stage tally all show up to 8 digits. The word STAGE is removed from STAGE HIGH to make room.
 - Extra life: a 1UP drops every 1000 discomen collected (originally once, at 2000).
 - A bomb item drops every 100 discomen collected.
+- Discomen within about 24 pixels of your ship are pulled in and collected.
+- The current rank (difficulty) is shown as a percentage under your ship icons: 0% easiest, 100% hardest.
 - Hold button 1 to move at the slowest speed; let go to return to your selected speed.
 - BOMB-type powerful shot: up to 8 bombs in flight instead of 3.
 - Each discoman adds 2 to the counter instead of 1, and the counter starts at 0, so pickups go +2, +4, +6 ... and every multiple of 10 shows the big gold number (1.5x size at every 100, 2x at every 1000). The counter box still stops at 999, but the popup values and score keep growing up to 9999.

@@ -137,6 +137,18 @@ the short "original bytes" in `PATCHES`, which the patchers use to check they're
     seems to stop the ship firing; blocking the hit bit (bit 8 of `$105A16`; tested at 0xA898) on every write stops
     the ship spawning. Forcing `$1052D8` before a stage loads gives a broken stage. Save states (`STATE=`) hang with
     these Lua scripts, so runs start from power-on (~21000 frames per stage when firing).
+- **Build 16 additions:** `MAGNET_HOOK` (0x9EA40: discomen within 18 px pulled to each player at 2 px/frame;
+  object positions are **0x100 per pixel**), `HUD_HOOK` (0x9EC00: rank % right of the man icon via the title text
+  routine 0x650E, only while a player is in play; text buffer `$10B4A0`), `HIGH8_HOOK` (STAGE HIGH 8th digit),
+  `TALLY_BOX_HOOK` (tally box drawn twice unzoomed, 8 px apart: zooming left seams). The tally rows use the game's
+  8-digit routine 0x1DA8. Rank: `$105114` is only recalculated now and then (and is the sum /8, 0..15); the HUD
+  computes the sum live. **HUD slide:** `$10518C` (P1) / `$10518E` (P2) go 0 -> 0x1C00 (+0x40/frame) when the panel
+  moves away for a boss, back at -0x100/frame; the panel draw subtracts it from its horizontal start (0x63D3C) and
+  skips drawing at 0x1C00. The boss slide (up) is `$10518A`: every HUD piece takes it capped at 0x600, subtracts it
+  from its start and adds it to its height (0x63D62 etc.). The rank does both.
+- **Build numbers:** every build handed to the owner gets the next `BUILD` number and its own BUILDS.md entry,
+  even small tweaks. **New code must start on an even address** (`patch.py` aligns the
+  hooks that follow text).
 - **"STAGE HIGH /" label:** one sprite, tile 0x0FE9 x 4 tiles (size 0x0104) at x 0x4D00, y 0x0EC0, drawn at
   0x644E4; `HIGH /` is in its last 2 tiles. The high-score number next to it is drawn separately.
 - **Score box frame:** sprites drawn at 0x63D24 (P1) / 0x640E6 (P2 mirrored, growing the other way): middle
